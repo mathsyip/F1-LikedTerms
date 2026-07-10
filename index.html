@@ -24,8 +24,21 @@
             font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
         }
 
-        /* ==================== 100% 防點擊錯位物理尺寸定義 ==================== */
+        /* ==================== 100% 防點擊錯位與網格塌陷之物理佈局 ==================== */
         
+        /* 顯式鎖死 Grid 軌道尺寸，杜絕 Safari/WebKit 的行高塌陷 Bug */
+        .grid-4x4 {
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            grid-template-rows: repeat(4, 1fr) !important;
+        }
+
+        .grid-6x6 {
+            display: grid !important;
+            grid-template-columns: repeat(6, 1fr) !important;
+            grid-template-rows: repeat(6, 1fr) !important;
+        }
+
         /* 1. 單人 4x4 棋盤容器 */
         .single-4x4-container {
             width: 260px;
@@ -34,6 +47,1258 @@
         @media (min-width: 640px) {
             .single-4x4-container {
                 width: 340px;
+                height: 340px;
+            }
+        }
+
+        /* 2. 單人 6x6 棋盤容器 */
+        .single-6x6-container {
+            width: 290px;
+            height: 290px;
+        }
+        @media (min-width: 640px) {
+            .single-6x6-container {
+                width: 380px;
+                height: 380px;
+            }
+        }
+
+        /* 3. 雙人 4x4 棋盤容器 */
+        .double-grid-container {
+            width: 260px;
+            height: 260px; /* 1:1 完美比例 */
+        }
+        @media (min-width: 640px) {
+            .double-grid-container {
+                width: 340px;
+                height: 340px;
+            }
+        }
+
+        /* 核心靜態卡牌：確保點擊坐標永久精準 */
+        .card-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            border: 2px solid #cbd5e1;
+            border-radius: 0.75rem;
+            background-color: #ffffff;
+            color: #334155; /* 確保在任何系統主題下都有深色文字 */
+            cursor: pointer;
+            box-sizing: border-box;
+            width: 100%;
+            height: 100%;
+            font-size: 1.05rem;
+            transition: background-color 0.1s ease, border-color 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        /* 針對 6x6 卡牌等窄尺寸特別微調，防止字體重疊 */
+        .card-btn[data-size="small"] {
+            font-size: 0.8rem;
+            border-radius: 0.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .card-btn {
+                font-size: 0.9rem;
+                border-radius: 0.6rem;
+                border-width: 2px;
+            }
+            .card-btn[data-size="small"] {
+                font-size: 0.65rem;
+                border-radius: 0.4rem;
+                border-width: 1.5px;
+            }
+        }
+
+        /* 物理穿透內部所有子節點，防止點擊到文字造成定位偏移 */
+        .card-btn * {
+            pointer-events: none !important;
+            user-select: none !important;
+        }
+
+        /* ==================== 透過屬性精確控制樣式 ==================== */
+        
+        /* 單人挑戰模式 */
+        .card-btn[data-mode="single"][data-state="idle"] {
+            border-color: #cbd5e1;
+            color: #334155;
+            background-color: #ffffff;
+        }
+        .card-btn[data-mode="single"][data-state="selected"] {
+            background-color: #10b981 !important;
+            border-color: #059669 !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+        }
+
+        /* 雙人模式 - 玩家 A (綠) */
+        .card-btn[data-mode="double-a"][data-state="idle"] {
+            border-color: #a7f3d0;
+            color: #065f46;
+            background-color: #ffffff;
+        }
+        .card-btn[data-mode="double-a"][data-state="selected"] {
+            background-color: #10b981 !important;
+            border-color: #059669 !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.2);
+        }
+
+        /* 雙人模式 - 玩家 B (藍) */
+        .card-btn[data-mode="double-b"][data-state="idle"] {
+            border-color: #bae6fd;
+            color: #075985;
+            background-color: #ffffff;
+        }
+        .card-btn[data-mode="double-b"][data-state="selected"] {
+            background-color: #0284c7 !important;
+            border-color: #0369a1 !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(2, 132, 199, 0.2);
+        }
+
+        /* 錯誤狀態 (只變更配色，不進行物理震動，防止極速點選時坐標跑版) */
+        .card-btn[data-state="wrong"] {
+            background-color: #fee2e2 !important;
+            border-color: #f87171 !important;
+            color: #991b1b !important;
+        }
+
+        /* 消除後狀態 */
+        .card-btn[data-state="eliminated"] {
+            opacity: 0.05 !important;
+            pointer-events: none !important;
+            background-color: #f8fafc !important;
+            border-color: #f1f5f9 !important;
+            box-shadow: none !important;
+        }
+
+        /* 凍結網格 */
+        .grid-frozen {
+            pointer-events: none !important;
+            opacity: 0.65;
+            transition: opacity 0.15s ease;
+        }
+
+        /* 拋物線飛舞克隆體 */
+        .flying-card {
+            position: fixed;
+            z-index: 9999;
+            font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
+            font-weight: 700;
+            border-radius: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+            transition: all 0.65s cubic-bezier(0.25, 1, 0.5, 1);
+            box-sizing: border-box;
+        }
+
+        /* 得分大字動畫 */
+        .score-pop {
+            animation: scorePop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes scorePop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="min-h-screen text-slate-800 flex flex-col justify-between overflow-x-hidden pb-4">
+
+    <!-- 頂部導航欄 -->
+    <header class="w-full bg-white/80 backdrop-blur-md border-b border-emerald-100/50 p-3 md:p-4 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2.5">
+                <div class="bg-gradient-to-br from-emerald-400 to-teal-500 text-white p-2 rounded-2xl shadow-md shadow-emerald-100">
+                    <i class="fa-solid fa-calculator text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600">
+                        同類項連連看
+                    </h1>
+                    <p class="text-[10px] md:text-xs text-slate-400 font-bold">Algebraic Like Terms Duel</p>
+                </div>
+            </div>
+            
+            <!-- 導航按鈕：主頁按鈕緊貼重玩按鈕左側 -->
+            <div class="flex items-center space-x-1.5 md:space-x-2">
+                <button id="header-home-btn" class="hidden bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs md:text-sm font-bold transition flex items-center gap-1.5 border border-slate-200 shadow-sm">
+                    <i class="fa-solid fa-house"></i> <span>主頁</span>
+                </button>
+                <button id="header-instructions-btn" class="bg-emerald-50 hover:bg-emerald-100/70 text-emerald-700 px-3 py-1.5 rounded-xl text-xs md:text-sm font-bold transition border border-emerald-100 flex items-center gap-1.5">
+                    <i class="fa-solid fa-circle-question"></i> <span class="hidden sm:inline">說明</span>
+                </button>
+                <button id="header-reset-btn" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-xs md:text-sm font-bold transition shadow-md shadow-emerald-500/20 flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-left"></i> <span>重玩</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 遊戲主舞台 -->
+    <main class="flex-grow flex flex-col items-center justify-center p-3 md:p-6 max-w-6xl mx-auto w-full">
+        
+        <!-- 模式選擇畫面 -->
+        <div id="mode-selection" class="w-full max-w-2xl bg-white/90 border border-emerald-50 rounded-3xl p-6 md:p-10 shadow-lg shadow-emerald-100/20 text-center my-4 animate-fade-in">
+            <span class="px-3.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-black uppercase tracking-widest mb-4 inline-block">Interactive Math Class</span>
+            <h2 class="text-2xl md:text-3xl font-black mb-2 text-slate-800">同類項極速配對</h2>
+            <p class="text-slate-400 mb-8 text-xs md:text-sm font-medium">請找出「字母相同，且相同字母次數也相同」的代數項！</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <!-- 單人挑戰模式 -->
+                <button id="btn-mode-single" class="group bg-white hover:bg-emerald-50/20 p-6 rounded-2xl border-2 border-slate-100 hover:border-emerald-300 transition-all text-left shadow-sm hover:shadow-md">
+                    <div class="bg-emerald-50 text-emerald-600 w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition group-hover:scale-115">
+                        <i class="fa-solid fa-user text-lg"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-1.5 text-slate-800">單人闖關挑戰</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed font-medium">挑戰自我！提供兩種難度盤面與三次生命值，在計時壓力下精準消除！</p>
+                </button>
+
+                <!-- 雙人即時對戰 -->
+                <button id="btn-mode-double" class="group bg-white hover:bg-sky-50/20 p-6 rounded-2xl border-2 border-slate-100 hover:border-sky-300 transition-all text-left shadow-sm hover:shadow-md">
+                    <div class="bg-sky-50 text-sky-600 w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition group-hover:scale-115">
+                        <i class="fa-solid fa-user-friends text-lg"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-1.5 text-slate-800">雙人極速對決</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed font-medium">使用快速 4×4 方格（8對同類項）。左右/上下獨立同步，比拼極限手速！</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- 單人難度選擇畫面 -->
+        <div id="difficulty-selection" class="hidden w-full max-w-2xl bg-white/90 border border-emerald-50 rounded-3xl p-6 md:p-10 shadow-lg shadow-emerald-100/20 text-center my-4 animate-fade-in">
+            <span class="px-3.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-xs font-black uppercase tracking-widest mb-4 inline-block">Difficulty Mode</span>
+            <h2 class="text-2xl md:text-3xl font-black mb-2 text-slate-800">選擇單人難度</h2>
+            <p class="text-slate-400 mb-8 text-xs md:text-sm font-medium">請選擇適合您的同類項棋盤尺寸：</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+                <!-- 難度 1 (4x4) -->
+                <button id="btn-diff-easy" class="group bg-white hover:bg-emerald-50/20 p-6 rounded-2xl border-2 border-slate-100 hover:border-emerald-300 transition-all text-left shadow-sm hover:shadow-md">
+                    <div class="bg-emerald-50 text-emerald-600 w-12 h-12 rounded-xl flex items-center justify-center mb-4 font-game font-bold text-lg transition group-hover:scale-110">
+                        4×4
+                    </div>
+                    <h3 class="text-lg font-bold mb-1.5 text-slate-800">難度 1：入門 (4×4)</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed font-medium">共 16 張卡牌（8對同類項）。適合新手快速熱身與熟悉同類項概念！</p>
+                </button>
+
+                <!-- 難度 2 (6x6) -->
+                <button id="btn-diff-hard" class="group bg-white hover:bg-teal-50/20 p-6 rounded-2xl border-2 border-slate-100 hover:border-teal-300 transition-all text-left shadow-sm hover:shadow-md">
+                    <div class="bg-teal-50 text-teal-600 w-12 h-12 rounded-xl flex items-center justify-center mb-4 font-game font-bold text-lg transition group-hover:scale-110">
+                        6×6
+                    </div>
+                    <h3 class="text-lg font-bold mb-1.5 text-slate-800">難度 2：挑戰 (6×6)</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed font-medium">共 36 張卡牌（18對同類項）。考驗專注力、眼力與極限手眼協調！</p>
+                </button>
+            </div>
+
+            <button id="btn-diff-back" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-2 rounded-xl text-xs md:text-sm font-bold transition border border-slate-200 shadow-sm">
+                返回模式選擇
+            </button>
+        </div>
+
+        <!-- 遊戲主畫面 -->
+        <div id="game-stage" class="hidden w-full flex-grow flex flex-col justify-center font-game">
+            
+            <!-- 狀態控制欄 -->
+            <div id="game-stats-bar" class="flex justify-between items-center mb-4 bg-white/80 backdrop-blur border border-slate-100 p-3 rounded-2xl w-full max-w-5xl mx-auto shadow-sm shrink-0">
+                <div>
+                    <span id="current-mode-badge" class="px-3 py-1 rounded-full text-xs font-bold tracking-wider"></span>
+                </div>
+                <!-- 單人狀態 -->
+                <div id="single-stats" class="hidden flex items-center space-x-3 sm:space-x-4">
+                    <!-- 愛心生命值 -->
+                    <div class="flex items-center space-x-1.5 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
+                        <span class="text-xs text-slate-400 font-bold">生命值:</span>
+                        <div id="hearts-container" class="flex space-x-1 text-rose-500"></div>
+                    </div>
+                    <!-- 累計計時器 -->
+                    <div class="flex items-center space-x-1.5 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
+                        <i class="fa-regular fa-clock text-emerald-500 text-xs"></i>
+                        <span id="single-timer-text" class="text-xs font-bold text-slate-600 font-game">00:00</span>
+                    </div>
+                    <!-- 配對統計 -->
+                    <div class="bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100 text-xs font-bold font-game">
+                        <span class="text-slate-400">成功:</span>
+                        <span id="single-pairs-matched" class="ml-1 text-emerald-600">0 / 15</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 單人 5x6 或 4x4 / 6x6 棋盤 (採用幾何鎖死容器，100% 杜絕 WebKit 點控偏差) -->
+            <div id="single-board-container" class="hidden mx-auto mb-2 shrink-0">
+                <div class="bg-white/95 p-3 rounded-3xl border border-slate-100 shadow-md">
+                    <div id="single-grid">
+                        <!-- JS 動態生成 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 雙人 4x4 棋盤 (自適應排列，不被壓縮) -->
+            <div id="double-board-container" class="hidden w-full max-w-5xl mx-auto flex flex-col lg:flex-row gap-6 items-center lg:items-stretch justify-center">
+                
+                <!-- 玩家 A 區塊 -->
+                <div id="player-a-block" class="flex flex-col items-center shrink-0">
+                    <div class="text-center mb-2 flex flex-col items-center">
+                        <span class="text-emerald-700 font-black tracking-wider text-xs md:text-sm bg-emerald-50 px-4 py-1 rounded-full border border-emerald-200">
+                            A 綠方 (左/上盤面)
+                        </span>
+                        <!-- 答對數目：直接大字顯示純數字 -->
+                        <div id="score-a-big" class="text-7xl md:text-8xl font-black text-emerald-500 leading-none drop-shadow-sm mt-2 select-none">0</div>
+                    </div>
+                    
+                    <div id="player-a-wrapper" class="bg-white/90 p-3 rounded-3xl border border-slate-100 shadow-sm shrink-0">
+                        <div id="player-a-grid" class="grid-4x4 gap-2 double-grid-container">
+                            <!-- JS 動態生成 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 中間即時消除歷史 -->
+                <div class="w-full max-w-[260px] sm:max-w-[340px] lg:w-44 h-28 lg:h-auto flex flex-col bg-white/95 p-2.5 rounded-2xl border border-slate-100 shadow-sm shrink-0">
+                    <div class="text-center border-b border-slate-100 pb-1 mb-2 hidden lg:block">
+                        <span class="text-[11px] uppercase tracking-wider font-extrabold text-slate-400 font-game">History</span>
+                    </div>
+                    
+                    <div class="flex flex-row lg:flex-col justify-around lg:justify-start gap-2 flex-grow overflow-hidden">
+                        <!-- 左方 A 的歷史 -->
+                        <div class="flex-1 flex flex-col items-center overflow-hidden">
+                            <span class="text-[10px] text-emerald-600 font-bold lg:hidden mb-1">A 消去</span>
+                            <div id="history-left" class="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto w-full items-center py-1">
+                                <!-- 動態加入消去項 -->
+                            </div>
+                        </div>
+                        
+                        <div class="hidden lg:block border-t border-slate-100 my-2"></div>
+
+                        <!-- 右方 B 的歷史 -->
+                        <div class="flex-1 flex flex-col items-center overflow-hidden">
+                            <span class="text-[10px] text-sky-600 font-bold lg:hidden mb-1">B 消去</span>
+                            <div id="history-right" class="flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto w-full items-center py-1">
+                                <!-- 動態加入消去項 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 玩家 B 區塊 -->
+                <div id="player-b-block" class="flex flex-col items-center shrink-0">
+                    <div class="text-center mb-2 flex flex-col items-center">
+                        <span class="text-sky-700 font-black tracking-wider text-xs md:text-sm bg-sky-50 px-4 py-1 rounded-full border border-sky-200">
+                            B 藍方 (右/下盤面)
+                        </span>
+                        <!-- 答對數目：直接大字顯示純數字 -->
+                        <div id="score-b-big" class="text-7xl md:text-8xl font-black text-sky-500 leading-none drop-shadow-sm mt-2 select-none">0</div>
+                    </div>
+                    
+                    <div id="player-b-wrapper" class="bg-white/90 p-3 rounded-3xl border border-slate-100 shadow-sm shrink-0">
+                        <div id="player-b-grid" class="grid-4x4 gap-2 double-grid-container">
+                            <!-- JS 動態生成 -->
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- 底部版權 -->
+    <footer class="w-full text-center py-2 text-slate-400 text-[10px] font-medium mt-4 shrink-0">
+        <p>© 數學科代數互動教學工具 · 觸控校正與實時計時版</p>
+    </footer>
+
+    <!-- 玩法說明 Modal -->
+    <div id="instructions-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+        <div class="bg-white border border-slate-100 rounded-3xl p-6 max-w-md w-full shadow-xl relative animate-fade-in">
+            <button id="instructions-close-btn" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 class="text-lg font-bold mb-3 text-emerald-700 flex items-center">
+                <i class="fa-solid fa-circle-info mr-2"></i> 同類項玩法說明
+            </h3>
+            <div class="space-y-3 text-xs md:text-sm text-slate-600 leading-relaxed font-medium">
+                <p>1. <strong>什麼是同類項？</strong><br>
+                   變數字母相同，且每一個變數的次數也必須完全一樣。<br>
+                   例如：<span class="text-emerald-600 font-bold">3ab</span> 與 <span class="text-emerald-600 font-bold">6ba</span> 是同類項（字母順序不影響）。<br>
+                   而 <span class="text-rose-500 font-bold">4x</span> 與 <span class="text-rose-500 font-bold">-6x<sup>2</sup></span> <strong>不是</strong>同類項（次數不同）。
+                </p>
+                <p>2. <strong>答錯懲罰：</strong><br>
+                   若選錯了不是同類項的卡牌，該玩家的盤面將會<strong>凍結 0.5 秒</strong>，此時無法操作！請冷靜作答。
+                </p>
+                <p>3. <strong>極速觸控與飛越：</strong><br>
+                   答對時，該同類項會以<strong>飛越動畫</strong>飛入中間消除播報台，兩方盤面同步消除。上方計分看板會直接以高度清新的<strong>超大字體數字</strong>更新！
+                </p>
+            </div>
+            <button id="instructions-ok-btn" class="mt-5 w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl transition shadow-md shadow-emerald-500/10">
+                開始挑戰
+            </button>
+        </div>
+    </div>
+
+    <!-- 結算畫面 Modal -->
+    <div id="gameover-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm font-game">
+        <div class="bg-white border border-emerald-100 rounded-3xl p-6 md:p-8 max-w-sm md:max-w-md w-full text-center shadow-xl relative overflow-hidden">
+            <div class="relative z-10">
+                <div id="gameover-icon" class="text-5xl mb-3 text-yellow-400">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <h2 id="gameover-title" class="text-2xl font-black mb-2 tracking-wider">挑戰成功！</h2>
+                <p id="gameover-msg" class="text-slate-500 mb-5 text-xs md:text-sm leading-relaxed font-medium"></p>
+                
+                <!-- 成績與時間顯示 -->
+                <div id="gameover-results" class="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-5 flex flex-col justify-center items-center gap-2 font-bold">
+                    <!-- 動態渲染 -->
+                </div>
+
+                <!-- 按鈕列 -->
+                <div class="flex flex-col sm:flex-row gap-2.5 justify-center">
+                    <button id="gameover-replay-btn" class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl transition shadow-md shadow-emerald-500/10 text-sm">
+                        再玩一次
+                    </button>
+                    <button id="gameover-home-btn" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2.5 rounded-xl transition text-sm">
+                        返回主選單
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 浮動提示 -->
+    <div id="toast-message" class="fixed top-20 left-1/2 transform -translate-x-1/2 bg-white/95 border border-slate-100 px-4 py-2 rounded-full text-xs md:text-sm font-semibold tracking-wide text-slate-800 shadow-lg flex items-center space-x-2 transition-all duration-300 opacity-0 pointer-events-none z-50">
+        <span id="toast-text">提示</span>
+    </div>
+
+    <script>
+        // --- 1. 程序化生成 200 組簡單、直觀的同類項題庫 ---
+        // 為了 100% 避免 HTML 或 JavaScript 在特定瀏覽器/語域環境中解析成亂碼，
+        // 所有二次方與三次方符號全面改為高安全性的 Unicode 轉義字元 \u00b2 與 \u00b3
+        function generate200Pool() {
+            const pool = [];
+            let id = 1;
+            const letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'j', 'k', 'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
+
+            // 1. 單變數（23個字母 * 4組 = 92對）
+            for (let i = 0; i < letters.length; i++) {
+                const char = letters[i];
+                const pairs = [
+                    [`3${char}`, `-5${char}`],
+                    [`7${char}`, `${char}`],
+                    [`-${char}`, `9${char}`],
+                    [`4${char}`, `-8${char}`]
+                ];
+                pairs.forEach(p => {
+                    pool.push({ id: id++, type: char, text1: p[0], text2: p[1] });
+                });
+            }
+
+            // 2. 雙變數交換律組（10種組合 * 4組 = 40對）
+            const doubleCombos = [
+                ['a', 'b'], ['x', 'y'], ['m', 'n'], ['p', 'q'], ['c', 'd'],
+                ['u', 'v'], ['h', 'k'], ['r', 's'], ['w', 'z'], ['a', 'c']
+            ];
+            for (let i = 0; i < doubleCombos.length; i++) {
+                const [c1, c2] = doubleCombos[i];
+                const pairs = [
+                    [`2${c1}${c2}`, `5${c2}${c1}`],
+                    [`-${c1}${c2}`, `9${c2}${c1}`],
+                    [`6${c1}${c2}`, `-3${c2}${c1}`],
+                    [`8${c1}${c2}`, `-${c2}${c1}`]
+                ];
+                pairs.forEach(p => {
+                    pool.push({ id: id++, type: `${c1}${c2}`, text1: p[0], text2: p[1] });
+                });
+            }
+
+            // 3. 二次方組（20種組合 * 2組 = 40對，使用 \u00b2 杜絕亂碼）
+            for (let i = 0; i < 20; i++) {
+                const char = letters[i % letters.length];
+                const pairs = [
+                    [`3${char}\u00b2`, `-${char}\u00b2`],
+                    [`-${char}\u00b2`, `8${char}\u00b2`]
+                ];
+                pairs.forEach(p => {
+                    pool.push({ id: id++, type: `${char}\u00b2`, text1: p[0], text2: p[1] });
+                });
+            }
+
+            // 4. 純常數整數組（18對）
+            const constants = [
+                [5, -3], [-12, 4], [8, -8], [-15, 20], [6, 14], [-9, -1],
+                [18, -4], [-25, 5], [30, -10], [-45, 15], [7, -13], [-16, 2],
+                [11, -9], [-22, 8], [33, -11], [-50, 50], [9, -14], [-4, 19]
+            ];
+            constants.forEach(c => {
+                pool.push({ id: id++, type: "const", text1: `${c[0]}`, text2: `${c[1]}` });
+            });
+
+            // 5. 三變數交換律組（5種組合 * 2組 = 10對）
+            const tripleCombos = [
+                ['a', 'b', 'c'], ['x', 'y', 'z'], ['p', 'q', 'r'], ['m', 'n', 'p'], ['r', 's', 't']
+            ];
+            for (let i = 0; i < tripleCombos.length; i++) {
+                const [c1, c2, c3] = tripleCombos[i];
+                const pairs = [
+                    [`2${c1}${c2}${c3}`, `-${c3}${c2}${c1}`],
+                    [`-${c1}${c2}${c3}`, `6${c3}${c2}${c1}`]
+                ];
+                pairs.forEach(p => {
+                    pool.push({ id: id++, type: `${c1}${c2}${c3}`, text1: p[0], text2: p[1] });
+                });
+            }
+
+            return pool;
+        }
+
+        // 載入 200 組簡單同類項大題庫
+        const ALL_LIKE_TERMS_POOL = generate200Pool();
+
+        // 次方符號轉換為 HTML 上標 (使用 \u00b2 匹配二次方，\u00b3 匹配三次方)
+        function formatAlgebra(text) {
+            return text.replace(/\u00b2/g, '<sup>2</sup>').replace(/\u00b3/g, '<sup>3</sup>');
+        }
+
+        // ==================== 高擬真代數項解析器 (核心防呆比對技術) ====================
+        // 此函式能自動分離負號與常數係數，並對變數及次方按字母排序，徹底精準校驗任意同類項
+        function getAlgebraicType(text) {
+            // 移除開頭的負號與所有的常數數字係數
+            let clean = text.replace(/^-?\d*/, '');
+            // 如果只剩下負號或什麼都沒剩下，代表是常數項 (Constant)
+            if (clean === '' || clean === '-') {
+                return 'const';
+            }
+            // 匹配所有的變數及其對應的次方 (例如: x, y², z³)
+            const matches = clean.match(/[a-z][\u00b2\u00b3]?/g);
+            if (!matches) {
+                return 'const';
+            }
+            // 將所有變數按字母順序排列（例如 "ba" 會被排序為 "ab"），實作交換律支持
+            matches.sort();
+            return matches.join('');
+        }
+
+        // 檢查兩個卡牌是否為同類項 (高安全、高精準度)
+        function areLikeTerms(cardA, cardB) {
+            return getAlgebraicType(cardA.text) === getAlgebraicType(cardB.text);
+        }
+
+        // 觸控 + 滑鼠高精確度防位移綁定函數 (核心：阻斷 WebKit 觸碰點位計算漏洞)
+        function bindBulletproofClick(element, handler) {
+            let touchHandled = false;
+
+            // 1. 行動裝置觸控立即響應 (0 毫秒物理判定，鎖死當前元素，不重疊、不偏位)
+            element.addEventListener('touchstart', (e) => {
+                touchHandled = true;
+                handler(element);
+                e.preventDefault(); // 阻斷模擬滑鼠事件
+            }, { passive: false });
+
+            // 2. 電腦端滑鼠點擊響應
+            element.addEventListener('click', (e) => {
+                if (touchHandled) {
+                    touchHandled = false;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+                handler(element);
+            });
+        }
+
+        // --- 2. 遊戲狀態變數 ---
+        let currentGameMode = null; 
+        let singleDifficulty = null; // 'easy' (4x4) | 'hard' (6x6)
+        
+        // 單人
+        let singleLives = 3;
+        let singleMatchedCount = 0;
+        let singleSelectedCard = null; 
+        let singleCards = [];          
+        let isSingleFrozen = false;    
+        let singleTargetPairs = 8; // 預設 4x4 為 8 對
+
+        // 單人計時器變數
+        let singleTimerInterval = null;
+        let singleElapsedSeconds = 0;
+
+        // 雙人 (4x4, 共 8 組)
+        let playerAScore = 0;
+        let playerBScore = 0;
+        let playerASelected = null;    
+        let playerBSelected = null;    
+        let isPlayerAFrozen = false;   
+        let isPlayerBFrozen = false;   
+        let doubleCards = [];          
+        let doubleAEliminated = [];    
+        let doubleBEliminated = [];    
+
+        // --- 3. 初始化與控制 ---
+
+        // 難度選擇切換
+        function showDifficultySelection() {
+            document.getElementById('mode-selection').classList.add('hidden');
+            document.getElementById('difficulty-selection').classList.remove('hidden');
+            document.getElementById('header-home-btn').classList.remove('hidden');
+        }
+
+        function hideDifficultySelection() {
+            document.getElementById('difficulty-selection').classList.add('hidden');
+            document.getElementById('mode-selection').classList.remove('hidden');
+            document.getElementById('header-home-btn').classList.add('hidden');
+        }
+
+        function selectMode(mode) {
+            if (mode === 'single') {
+                // 單人模式先進入難度選擇
+                showDifficultySelection();
+                return;
+            }
+            
+            // 雙人模式直接啟動
+            currentGameMode = 'double';
+            document.getElementById('mode-selection').classList.add('hidden');
+            document.getElementById('game-stage').classList.remove('hidden');
+            document.getElementById('header-home-btn').classList.remove('hidden');
+            
+            const badge = document.getElementById('current-mode-badge');
+            badge.textContent = "雙人對戰模式 (4×4)";
+            badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-700 border border-sky-100";
+            document.getElementById('single-stats').classList.add('hidden');
+            document.getElementById('single-board-container').classList.add('hidden');
+            document.getElementById('double-board-container').classList.remove('hidden');
+            initDoubleGame();
+        }
+
+        // 開始單人遊戲
+        function startSingleGame(difficulty) {
+            singleDifficulty = difficulty;
+            currentGameMode = 'single';
+            
+            document.getElementById('difficulty-selection').classList.add('hidden');
+            document.getElementById('game-stage').classList.remove('hidden');
+            
+            const badge = document.getElementById('current-mode-badge');
+            const gridEl = document.getElementById('single-grid');
+            
+            if (difficulty === 'easy') {
+                singleTargetPairs = 8;
+                badge.textContent = "單人模式：入門 (4×4)";
+                badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-100";
+                
+                // 動態切換為 4x4 佈局與物理限制尺寸
+                gridEl.className = "grid-4x4 gap-2 single-4x4-container mx-auto";
+            } else {
+                singleTargetPairs = 18;
+                badge.textContent = "單人模式：挑戰 (6×6)";
+                badge.className = "px-3 py-1 rounded-full text-xs font-bold bg-teal-50 text-teal-700 border border-teal-100";
+                
+                // 動態切換為 6x6 佈局與物理限制尺寸
+                gridEl.className = "grid-6x6 gap-1.5 single-6x6-container mx-auto";
+            }
+            
+            document.getElementById('single-stats').classList.remove('hidden');
+            document.getElementById('single-board-container').classList.remove('hidden');
+            document.getElementById('double-board-container').classList.add('hidden');
+            
+            initSingleGame();
+        }
+
+        // 為主選單與全局按鈕綁定無感觸控事件
+        bindBulletproofClick(document.getElementById('btn-mode-single'), () => selectMode('single'));
+        bindBulletproofClick(document.getElementById('btn-mode-double'), () => selectMode('double'));
+        bindBulletproofClick(document.getElementById('btn-diff-easy'), () => startSingleGame('easy'));
+        bindBulletproofClick(document.getElementById('btn-diff-hard'), () => startSingleGame('hard'));
+        bindBulletproofClick(document.getElementById('btn-diff-back'), () => hideDifficultySelection());
+        
+        bindBulletproofClick(document.getElementById('header-home-btn'), () => returnToMainMenu());
+        bindBulletproofClick(document.getElementById('header-reset-btn'), () => resetGame());
+        bindBulletproofClick(document.getElementById('header-instructions-btn'), () => showInstructions());
+        bindBulletproofClick(document.getElementById('instructions-close-btn'), () => hideInstructions());
+        bindBulletproofClick(document.getElementById('instructions-ok-btn'), () => hideInstructions());
+
+        function shuffle(array) {
+            let currentIndex = array.length, randomIndex;
+            while (currentIndex != 0) {
+                randomIndex = Math.floor(Math.random() * currentIndex);
+                currentIndex--;
+                [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+            }
+            return array;
+        }
+
+        function generateGameCards(pairsCount) {
+            const selectedPool = shuffle([...ALL_LIKE_TERMS_POOL]).slice(0, pairsCount);
+            let tempPool = [];
+            selectedPool.forEach(item => {
+                tempPool.push({ id: item.id, type: item.type, text: item.text1, formattedText: formatAlgebra(item.text1) });
+                tempPool.push({ id: item.id, text: item.text2, formattedText: formatAlgebra(item.text2) });
+            });
+            return shuffle(tempPool);
+        }
+
+        // --- 4. 單人模式與計時器邏輯 ---
+
+        function startSingleTimer() {
+            stopSingleTimer();
+            singleElapsedSeconds = 0;
+            document.getElementById('single-timer-text').textContent = "00:00";
+            
+            singleTimerInterval = setInterval(() => {
+                singleElapsedSeconds++;
+                const mins = Math.floor(singleElapsedSeconds / 60).toString().padStart(2, '0');
+                const secs = (singleElapsedSeconds % 60).toString().padStart(2, '0');
+                document.getElementById('single-timer-text').textContent = `${mins}:${secs}`;
+            }, 1000);
+        }
+
+        function stopSingleTimer() {
+            if (singleTimerInterval) {
+                clearInterval(singleTimerInterval);
+                singleTimerInterval = null;
+            }
+        }
+
+        function initSingleGame() {
+            singleLives = 3;
+            singleMatchedCount = 0;
+            singleSelectedCard = null;
+            isSingleFrozen = false;
+            updateHeartsUI();
+            document.getElementById('single-pairs-matched').textContent = `0 / ${singleTargetPairs}`;
+            
+            singleCards = generateGameCards(singleTargetPairs); 
+            renderSingleGrid();
+            startSingleTimer(); // 開始計時
+        }
+
+        function updateHeartsUI() {
+            const container = document.getElementById('hearts-container');
+            container.innerHTML = '';
+            for (let i = 0; i < 3; i++) {
+                const heart = document.createElement('i');
+                if (i < singleLives) {
+                    heart.className = "fa-solid fa-heart text-rose-500 text-xs transition-all duration-300";
+                } else {
+                    heart.className = "fa-regular fa-heart text-slate-200 text-xs transition-all duration-300";
+                }
+                container.appendChild(heart);
+            }
+        }
+
+        function renderSingleGrid() {
+            const grid = document.getElementById('single-grid');
+            grid.innerHTML = '';
+            
+            // 顯示與定位單人棋盤容器，排除任何垂直高度彈性伸縮
+            const container = document.getElementById('single-board-container');
+            container.classList.remove('hidden');
+
+            singleCards.forEach((card, index) => {
+                // 直接使用高度幾何化 button 進行網格填充
+                const cardEl = document.createElement('button');
+                cardEl.type = "button";
+                cardEl.className = "card-btn";
+                cardEl.setAttribute('data-mode', 'single');
+                cardEl.setAttribute('data-state', 'idle');
+                cardEl.setAttribute('data-index', index);
+                
+                // 如果是 6x6 難度，使用更精細的字體與防爆版型
+                if (singleDifficulty === 'hard') {
+                    cardEl.setAttribute('data-size', 'small');
+                }
+                
+                cardEl.innerHTML = `<span class="font-mono text-center tracking-wide pointer-events-none">${card.formattedText}</span>`;
+                
+                bindBulletproofClick(cardEl, () => {
+                    handleSingleCardClick(cardEl, index, card);
+                });
+                
+                grid.appendChild(cardEl);
+            });
+        }
+
+        function handleSingleCardClick(element, index, cardData) {
+            const currentState = element.getAttribute('data-state');
+            if (isSingleFrozen || currentState === 'eliminated' || currentState === 'selected') {
+                return;
+            }
+
+            if (!singleSelectedCard) {
+                singleSelectedCard = { element, index, data: cardData };
+                element.setAttribute('data-state', 'selected');
+            } else {
+                const firstCard = singleSelectedCard;
+                if (firstCard.index === index) return;
+
+                // 改用 areLikeTerms 作為萬無一失的代數同類項判定
+                if (areLikeTerms(firstCard.data, cardData)) {
+                    element.setAttribute('data-state', 'selected');
+                    
+                    setTimeout(() => {
+                        firstCard.element.setAttribute('data-state', 'eliminated');
+                        element.setAttribute('data-state', 'eliminated');
+                        
+                        singleMatchedCount++;
+                        document.getElementById('single-pairs-matched').textContent = `${singleMatchedCount} / ${singleTargetPairs}`;
+                        
+                        if (singleMatchedCount === singleTargetPairs) {
+                            stopSingleTimer(); // 停止計時
+                            showGameOverModal(true, "完美配對！🎉", `你已順利找出所有 ${singleTargetPairs} 組同類項。<br>剩餘生命值：${singleLives} 顆心`, "text-emerald-600");
+                        }
+                    }, 250);
+                    
+                    singleSelectedCard = null;
+                } else {
+                    element.setAttribute('data-state', 'wrong');
+                    firstCard.element.setAttribute('data-state', 'wrong');
+                    
+                    isSingleFrozen = true;
+                    singleLives--;
+                    updateHeartsUI();
+                    showToast("😢 不是同類項喔！懲罰停頓 0.5 秒", "text-rose-600");
+
+                    document.getElementById('single-grid').classList.add('grid-frozen');
+
+                    setTimeout(() => {
+                        firstCard.element.setAttribute('data-state', 'idle');
+                        element.setAttribute('data-state', 'idle');
+                        isSingleFrozen = false;
+                        singleSelectedCard = null;
+                        document.getElementById('single-grid').classList.remove('grid-frozen');
+
+                        if (singleLives <= 0) {
+                            stopSingleTimer(); // 停止計時
+                            showGameOverModal(false, "挑戰結束", "不要緊，多觀察變數和次數，再試一次吧！", "text-slate-600");
+                        }
+                    }, 500);
+                }
+            }
+        }
+
+
+        // --- 5. 雙人模式 (4x4 = 16張) ---
+
+        function initDoubleGame() {
+            playerAScore = 0;
+            playerBScore = 0;
+            playerASelected = null;
+            playerBSelected = null;
+            isPlayerAFrozen = false;
+            isPlayerBFrozen = false;
+
+            updateScoreUI('A', 0);
+            updateScoreUI('B', 0);
+
+            document.getElementById('history-left').innerHTML = '';
+            document.getElementById('history-right').innerHTML = '';
+
+            doubleCards = generateGameCards(8); 
+            
+            doubleAEliminated = new Array(16).fill(false);
+            doubleBEliminated = new Array(16).fill(false);
+
+            renderDoubleGrids();
+        }
+
+        function updateScoreUI(player, score) {
+            const bigScoreId = player === 'A' ? 'score-a-big' : 'score-b-big';
+            const scoreEl = document.getElementById(bigScoreId);
+            
+            scoreEl.textContent = score;
+            
+            scoreEl.classList.remove('score-pop');
+            void scoreEl.offsetWidth; 
+            scoreEl.classList.add('score-pop');
+        }
+
+        function renderDoubleGrids() {
+            const gridA = document.getElementById('player-a-grid');
+            const gridB = document.getElementById('player-b-grid');
+            gridA.innerHTML = '';
+            gridB.innerHTML = '';
+
+            doubleCards.forEach((card, index) => {
+                // 玩家 A 棋盤
+                const cardAEl = document.createElement('button');
+                cardAEl.type = "button";
+                cardAEl.id = `card-a-${index}`;
+                cardAEl.className = "card-btn";
+                cardAEl.setAttribute('data-mode', 'double-a');
+                cardAEl.setAttribute('data-state', 'idle');
+                cardAEl.setAttribute('data-index', index);
+                cardAEl.innerHTML = `<span class="font-mono text-center tracking-wide pointer-events-none">${card.formattedText}</span>`;
+                
+                bindBulletproofClick(cardAEl, () => {
+                    handleDoubleCardClick('A', cardAEl, index, card);
+                });
+                gridA.appendChild(cardAEl);
+
+                // 玩家 B 棋盤
+                const cardBEl = document.createElement('button');
+                cardBEl.type = "button";
+                cardBEl.id = `card-b-${index}`;
+                cardBEl.className = "card-btn";
+                cardBEl.setAttribute('data-mode', 'double-b');
+                cardBEl.setAttribute('data-state', 'idle');
+                cardBEl.setAttribute('data-index', index);
+                cardBEl.innerHTML = `<span class="font-mono text-center tracking-wide pointer-events-none">${card.formattedText}</span>`;
+                
+                bindBulletproofClick(cardBEl, () => {
+                    handleDoubleCardClick('B', cardBEl, index, card);
+                });
+                gridB.appendChild(cardBEl);
+            });
+        }
+
+        function handleDoubleCardClick(player, element, index, cardData) {
+            if (player === 'A') {
+                if (isPlayerAFrozen || doubleAEliminated[index] || (playerASelected && playerASelected.index === index)) return;
+            } else {
+                if (isPlayerBFrozen || doubleBEliminated[index] || (playerBSelected && playerBSelected.index === index)) return;
+            }
+
+            if (player === 'A') {
+                if (!playerASelected) {
+                    playerASelected = { element, index, data: cardData };
+                    element.setAttribute('data-state', 'selected');
+                } else {
+                    const firstSelection = playerASelected;
+                    if (firstSelection.index === index) return;
+
+                    // 同理，改用 areLikeTerms 作為萬無一失的代數同類項判定
+                    if (areLikeTerms(firstSelection.data, cardData)) {
+                        element.setAttribute('data-state', 'selected');
+                        
+                        playerAScore++;
+                        updateScoreUI('A', playerAScore);
+
+                        // 觸發飛越動畫，同步時直接以兩張卡片的 index 來進行棋盤銷毀同步
+                        triggerFlyAnimation('A', firstSelection.element, element, firstSelection.data.text, cardData.text, firstSelection.index, index);
+                        playerASelected = null;
+                    } else {
+                        element.setAttribute('data-state', 'wrong');
+                        firstSelection.element.setAttribute('data-state', 'wrong');
+                        
+                        isPlayerAFrozen = true;
+                        document.getElementById('player-a-grid').classList.add('grid-frozen');
+
+                        setTimeout(() => {
+                            firstSelection.element.setAttribute('data-state', 'idle');
+                            element.setAttribute('data-state', 'idle');
+                            
+                            isPlayerAFrozen = false;
+                            document.getElementById('player-a-grid').classList.remove('grid-frozen');
+                            playerASelected = null;
+                        }, 500);
+                    }
+                }
+            } else {
+                // 玩家 B
+                if (!playerBSelected) {
+                    playerBSelected = { element, index, data: cardData };
+                    element.setAttribute('data-state', 'selected');
+                } else {
+                    const firstSelection = playerBSelected;
+                    if (firstSelection.index === index) return;
+
+                    // 同理，改用 areLikeTerms 作為萬無一失的代數同類項判定
+                    if (areLikeTerms(firstSelection.data, cardData)) {
+                        element.setAttribute('data-state', 'selected');
+                        
+                        playerBScore++;
+                        updateScoreUI('B', playerBScore);
+
+                        triggerFlyAnimation('B', firstSelection.element, element, firstSelection.data.text, cardData.text, firstSelection.index, index);
+                        playerBSelected = null;
+                    } else {
+                        element.setAttribute('data-state', 'wrong');
+                        firstSelection.element.setAttribute('data-state', 'wrong');
+                        
+                        isPlayerBFrozen = true;
+                        document.getElementById('player-b-grid').classList.add('grid-frozen');
+
+                        setTimeout(() => {
+                            firstSelection.element.setAttribute('data-state', 'idle');
+                            element.setAttribute('data-state', 'idle');
+                            
+                            isPlayerBFrozen = false;
+                            document.getElementById('player-b-grid').classList.remove('grid-frozen');
+                            playerBSelected = null;
+                        }, 500);
+                    }
+                }
+            }
+        }
+
+        // 拋物線飛至中間的動畫
+        function triggerFlyAnimation(player, el1, el2, text1, text2, idx1, idx2) {
+            const rect1 = el1.getBoundingClientRect();
+            const rect2 = el2.getBoundingClientRect();
+            
+            const targetId = player === 'A' ? 'history-left' : 'history-right';
+            const targetEl = document.getElementById(targetId);
+            const targetRect = targetEl.getBoundingClientRect();
+            
+            const clone1 = document.createElement('div');
+            const clone2 = document.createElement('div');
+            
+            const baseStyle = "position: fixed; z-index: 9999; font-weight: bold; border-radius: 12px; pointer-events: none; transition: all 0.65s cubic-bezier(0.25, 1, 0.5, 1); box-sizing: border-box; display: flex; align-items: center; justify-content: center;";
+            const styleA = "background-color: #10b981; border: 2px solid #059669; color: white; box-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);";
+            const styleB = "background-color: #0284c7; border: 2px solid #0369a1; color: white; box-shadow: 0 10px 20px rgba(2, 132, 199, 0.3);";
+            
+            clone1.className = "flying-card";
+            clone2.className = "flying-card";
+            clone1.style.cssText = baseStyle + (player === 'A' ? styleA : styleB);
+            clone2.style.cssText = baseStyle + (player === 'A' ? styleA : styleB);
+            
+            clone1.innerHTML = el1.innerHTML;
+            clone2.innerHTML = el2.innerHTML;
+            
+            clone1.style.left = `${rect1.left}px`;
+            clone1.style.top = `${rect1.top}px`;
+            clone1.style.width = `${rect1.width}px`;
+            clone1.style.height = `${rect1.height}px`;
+            
+            clone2.style.left = `${rect2.left}px`;
+            clone2.style.top = `${rect2.top}px`;
+            clone2.style.width = `${rect2.width}px`;
+            clone2.style.height = `${rect2.height}px`;
+            
+            document.body.appendChild(clone1);
+            document.body.appendChild(clone2);
+            
+            // 設為消除狀態 (100% 保持網格位置，不會發生任何擠壓抖動)
+            el1.setAttribute('data-state', 'eliminated');
+            el2.setAttribute('data-state', 'eliminated');
+            
+            void clone1.offsetWidth; 
+            
+            const targetX = targetRect.left + targetRect.width / 2;
+            const targetY = targetRect.top + targetRect.height / 2;
+            
+            clone1.style.left = `${targetX - rect1.width / 4}px`;
+            clone1.style.top = `${targetY - rect1.height / 4}px`;
+            clone1.style.transform = "scale(0.3) rotate(-15deg)";
+            clone1.style.opacity = "0.2";
+            
+            clone2.style.left = `${targetX - rect2.width / 4}px`;
+            clone2.style.top = `${targetY - rect2.height / 4}px`;
+            clone2.style.transform = "scale(0.3) rotate(15deg)";
+            clone2.style.opacity = "0.2";
+            
+            setTimeout(() => {
+                clone1.remove();
+                clone2.remove();
+                addHistory(player === 'A' ? 'left' : 'right', text1, text2);
+                eliminateMatchAcrossBothBoards(idx1, idx2, player);
+            }, 600);
+        }
+
+        // 雙方對戰盤面同步消去（由 type 同步改為 index 機制，徹底避免多對常數項時產生的連帶消除 bug）
+        function eliminateMatchAcrossBothBoards(idx1, idx2, scoringPlayer) {
+            // 標記兩個特定棋格為已消除
+            doubleAEliminated[idx1] = true;
+            doubleBEliminated[idx1] = true;
+            doubleAEliminated[idx2] = true;
+            doubleBEliminated[idx2] = true;
+
+            const elA1 = document.getElementById(`card-a-${idx1}`);
+            const elA2 = document.getElementById(`card-a-${idx2}`);
+            const elB1 = document.getElementById(`card-b-${idx1}`);
+            const elB2 = document.getElementById(`card-b-${idx2}`);
+
+            if (elA1) elA1.setAttribute('data-state', 'eliminated');
+            if (elA2) elA2.setAttribute('data-state', 'eliminated');
+            if (elB1) elB1.setAttribute('data-state', 'eliminated');
+            if (elB2) elB2.setAttribute('data-state', 'eliminated');
+
+            // 處理搶消除時，另一位玩家選取了這兩張卡片之一的狀況（修正點：同步清空並將卡片改為 eliminated，防止卡死在 selected 狀態）
+            if (playerASelected && (playerASelected.index === idx1 || playerASelected.index === idx2)) {
+                playerASelected.element.setAttribute('data-state', 'eliminated');
+                playerASelected = null;
+            }
+            if (playerBSelected && (playerBSelected.index === idx1 || playerBSelected.index === idx2)) {
+                playerBSelected.element.setAttribute('data-state', 'eliminated');
+                playerBSelected = null;
+            }
+
+            const totalEliminated = doubleAEliminated.filter(v => v).length;
+            if (totalEliminated === 16) {
+                setTimeout(() => {
+                    handleDoubleWinner();
+                }, 400);
+            }
+        }
+
+        function addHistory(side, text1, text2) {
+            const containerId = side === 'left' ? 'history-left' : 'history-right';
+            const container = document.getElementById(containerId);
+            
+            const item = document.createElement('div');
+            const borderColor = side === 'left' ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-sky-200 bg-sky-50 text-sky-800';
+            
+            const f1 = formatAlgebra(text1);
+            const f2 = formatAlgebra(text2);
+
+            item.className = `flex flex-col lg:flex-row items-center justify-center p-1 border ${borderColor} rounded-lg text-[10px] font-mono font-bold w-12 lg:w-36 text-center shadow-sm shrink-0 animate-bounce`;
+            item.innerHTML = `
+                <span class="px-0.5">${f1}</span>
+                <span class="text-[8px] text-slate-400 mx-0.5 lg:mx-1"><i class="fa-solid fa-link"></i></span>
+                <span class="px-0.5">${f2}</span>
+            `;
+            
+            container.insertBefore(item, container.firstChild);
+            
+            setTimeout(() => {
+                item.classList.remove('animate-bounce');
+            }, 1000);
+        }
+
+        function handleDoubleWinner() {
+            let title = "";
+            let msg = "";
+            let colorClass = "";
+            
+            if (playerAScore > playerBScore) {
+                title = "🎉 玩家 A 榮耀勝出！";
+                msg = "玩家 A 成功奪得了較多的同類項配對，反應力驚人！";
+                colorClass = "text-emerald-600";
+            } else if (playerBScore > playerAScore) {
+                title = "🎉 玩家 B 榮耀勝出！";
+                msg = "玩家 B 成功奪得了較多的同類項配對，反應力驚人！";
+                colorClass = "text-sky-600";
+            } else {
+                title = "🤝 難分勝負！平手";
+                msg = "兩位實力相當，對同類項都瞭若指掌！";
+                colorClass = "text-slate-700";
+            }
+
+            showGameOverModal(true, title, msg, colorClass);
+        }
+
+
+        // --- 6. 輔助 UI 函數 (Modal、Toast 等) ---
+
+        function showToast(text, colorClass = "text-emerald-600") {
+            const toast = document.getElementById('toast-message');
+            const toastText = document.getElementById('toast-text');
+            
+            toastText.textContent = text;
+            toastText.className = `font-bold ${colorClass}`;
+            
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            toast.classList.add('opacity-100');
+            
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 1800);
+        }
+
+        function showGameOverModal(isWin, title, message, titleColorClass = "text-emerald-600") {
+            const modal = document.getElementById('gameover-modal');
+            const iconEl = document.getElementById('gameover-icon');
+            const titleEl = document.getElementById('gameover-title');
+            const msgEl = document.getElementById('gameover-msg');
+            const resultsEl = document.getElementById('gameover-results');
+
+            titleEl.textContent = title;
+            titleEl.className = `text-2xl font-black mb-2 tracking-wider ${titleColorClass}`;
+            msgEl.innerHTML = message;
+
+            if (isWin) {
+                iconEl.innerHTML = '<i class="fa-solid fa-trophy text-amber-400 animate-bounce"></i>';
+            } else {
+                iconEl.innerHTML = '<i class="fa-solid fa-face-frown text-slate-300"></i>';
+            }
+
+            resultsEl.innerHTML = '';
+            if (currentGameMode === 'single') {
+                // 將秒數轉換為友好的中文字
+                const mins = Math.floor(singleElapsedSeconds / 60);
+                const secs = singleElapsedSeconds % 60;
+                const timeText = mins > 0 ? `${mins} 分 ${secs} 秒` : `${secs} 秒`;
+
+                resultsEl.innerHTML = `
+                    <div class="flex flex-col items-center gap-1">
+                        <span class="text-xs text-slate-400 font-bold">配對統計</span>
+                        <span class="text-2xl font-bold font-game text-emerald-600">${singleMatchedCount} / ${singleTargetPairs}</span>
+                    </div>
+                    <div class="border-t border-slate-100 w-full my-1"></div>
+                    <div class="flex flex-col items-center gap-1">
+                        <span class="text-xs text-slate-400 font-bold">挑戰花費時間</span>
+                        <span class="text-xl font-bold font-game text-slate-700">${timeText}</span>
+                    </div>
+                `;
+            } else {
+                resultsEl.innerHTML = `
+                    <div class="text-xs text-slate-400 mb-1 font-bold">最終答對個數</div>
+                    <div class="flex items-center space-x-6 text-3xl font-black">
+                        <div class="text-emerald-600">${playerAScore}</div>
+                        <div class="text-slate-300">:</div>
+                        <div class="text-sky-600">${playerBScore}</div>
+                    </div>
+                `;
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function hideGameOverModal() {
+            document.getElementById('gameover-modal').classList.add('hidden');
+        }
+
+        // 修正點：使用行動裝置與電腦通用的標準事件綁定，直接在按鈕元素上呼叫，杜絕事件冒泡與點控失效 Bug
+        bindBulletproofClick(document.getElementById('gameover-replay-btn'), () => {
+            resetGame();
+        });
+        
+        bindBulletproofClick(document.getElementById('gameover-home-btn'), () => {
+            returnToMainMenu();
+        });
+
+        function resetGame() {
+            hideGameOverModal();
+            if (currentGameMode === 'single') {
+                initSingleGame();
+                showToast("🔄 棋盤已洗牌，單人挑戰開始！", "text-emerald-600");
+            } else if (currentGameMode === 'double') {
+                initDoubleGame();
+                showToast("🔄 4×4 對決戰局已重新洗牌！", "text-sky-600");
+            }
+        }
+
+        function returnToMainMenu() {
+            hideGameOverModal();
+            stopSingleTimer(); // 安全釋放單人計時器
+            document.getElementById('game-stage').classList.add('hidden');
+            document.getElementById('difficulty-selection').classList.add('hidden');
+            document.getElementById('mode-selection').classList.remove('hidden');
+            
+            // 返回主選單時，將頂部導航欄的「主頁」按鈕隱藏
+            document.getElementById('header-home-btn').classList.add('hidden');
+            currentGameMode = null;
+            singleDifficulty = null;
+        }
+
+        function showInstructions() {
+            document.getElementById('instructions-modal').classList.remove('hidden');
+        }
+
+        function hideInstructions() {
+            document.getElementById('instructions-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
+
+```
                 height: 340px;
             }
         }
